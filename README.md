@@ -1,5 +1,4 @@
-Cornhole Vision Dataset
-=======================
+# Cornhole Vision Dataset
 
 This directory contains a dataset of bean bags on a black board.
 There are individual images and a single JSON file providing annotation information according to the following format:
@@ -22,3 +21,9 @@ There are individual images and a single JSON file providing annotation informat
       - width: #
 
 The images are numbered 0-X and correspond to values in the "xxxx".jpg file
+
+## Author
+
+Tyler Frasca<br />
+tmfrasca@gmail.com<br />
+http://tmfrasca.info
