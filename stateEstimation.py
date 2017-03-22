@@ -12,16 +12,19 @@ def color_and_contours(filename):
     :param filename: Source file
     :return: Matrix
     """
-    # Define the boundaries (Min BGR, Max BGR).
-    red_beanbags = ([23, 15, 74], [95, 72, 235])
-    blue_beanbags = ([101, 58, 44], [204, 135, 95])
+    # Define the boundaries (Min HSV, Max HSV).
+    red_beanbags = ([0, 70, 50], [10, 255, 255])      # Lower red
+    red_beanbags2 = ([170, 70, 50], [180, 255, 255])  # Upper red
+    blue_beanbags = ([100, 120, 0], [140, 255, 255])
     boundaries_list = [
         red_beanbags,
-        # blue_beanbags
+        red_beanbags2,
+        blue_beanbags
     ]
 
     # Load the image.
     image = cv2.imread(filename)
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     output = None
 
     for boundaries in boundaries_list:
@@ -31,7 +34,7 @@ def color_and_contours(filename):
         upper = np.array(upper, dtype="uint8")
 
         # Find the colors within the specified boundaries and apply the mask.
-        mask = cv2.inRange(image, lower, upper)
+        mask = cv2.inRange(hsv, lower, upper)
         result = cv2.bitwise_and(image, image, mask=mask)
         output = result if output is None else cv2.bitwise_or(output, result)
 
