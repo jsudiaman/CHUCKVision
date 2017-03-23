@@ -1,6 +1,7 @@
 """Components for CHUCK state estimation."""
 import cv2
 import json
+import traceback
 import numpy as np
 
 # HSV boundaries (Min, Max)
@@ -125,28 +126,33 @@ if __name__ == '__main__':
         image, red_rects, blue_rects, board_rect, cornhole = annotate("dataset/img/%04d.jpg" % index)
         cv2.imshow("State Estimator", image)
 
-        # Compare to data set
-        data = dataset[index]
-        error = lambda exp, real: float(abs(exp - real)) / real * 100
+        try:
+            # Compare to data set
+            data = dataset[index]
+            error = lambda exp, real: float(abs(exp - real)) / real * 100
 
-        # Board
-        ds_board = data['board']
-        expWidth, expHeight = board_rect[2], board_rect[3]
-        realWidth, realHeight = ds_board['size']['width'], ds_board['size']['height']
-        print "File: %04d.jpg" % index
-        print "==== BOARD ===="
-        print "Width: %d (Error: %d%%)" % (expWidth, error(expWidth, realWidth))
-        print "Height: %d (Error: %d%%)" % (expHeight, error(expHeight, realHeight))
+            # Board
+            ds_board = data['board']
+            expWidth, expHeight = board_rect[2], board_rect[3]
+            realWidth, realHeight = ds_board['size']['width'], ds_board['size']['height']
+            print "File: %04d.jpg" % index
+            print "==== BOARD ===="
+            print "Width: %d (Error: %d%%)" % (expWidth, error(expWidth, realWidth))
+            print "Height: %d (Error: %d%%)" % (expHeight, error(expHeight, realHeight))
 
-        # Cornhole
-        ds_hole = ds_board['hole']
-        expX, expY, expRadius = cornhole
-        realX, realY, realRadius = ds_hole['center'][0], ds_hole['center'][1], ds_hole['radius']
-        print "=== CORNHOLE ==="
-        print "x: %d (Error: %d%%)" % (expX, error(expX, realX))
-        print "y: %d (Error: %d%%)" % (expY, error(expY, realY))
-        print "radius: %d (Error: %d%%)" % (expRadius, error(expRadius, realRadius))
-        print ""
+            # Cornhole
+            ds_hole = data['board']['hole']
+            expX, expY, expRadius = cornhole
+            realX, realY, realRadius = ds_hole['center'][0], ds_hole['center'][1], ds_hole['radius']
+            print "=== CORNHOLE ==="
+            print "x: %d (Error: %d%%)" % (expX, error(expX, realX))
+            print "y: %d (Error: %d%%)" % (expY, error(expY, realY))
+            print "radius: %d (Error: %d%%)" % (expRadius, error(expRadius, realRadius))
+        except:
+            print "==== EXCEPTION ===="
+            traceback.print_exc()
+        finally:
+            print ""
 
         # Left key = Go to previous image. Right key = Go to next image. Escape key = Quit.
         key = cv2.waitKey(0)
