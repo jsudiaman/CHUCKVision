@@ -24,7 +24,7 @@ def analyze(filename):
     Scan the source image for beanbags, board, and cornhole. Detected objects are annotated using rectangles or circles.
 
     :param filename: location of the source file
-    :return: (image, red_rects, blue_rects, board_rect, cornhole)
+    :return: (image, red_rects, blue_rects, board_rect, cornhole_circ)
     """
     # Load the image.
     image = cv2.imread(filename)
@@ -49,6 +49,7 @@ def analyze(filename):
     cornhole_circ = draw_cornhole(image, circle_mask, board_rect)
 
     # Return the image and its annotations.
+    # TODO Possibly return (image, jsonObject) instead
     return image, red_rects, blue_rects, board_rect, cornhole_circ
 
 
@@ -191,10 +192,8 @@ if __name__ == '__main__':
         image, red_rects, blue_rects, board_rect, cornhole_circ = analyze("dataset/img/%04d.jpg" % index)
         cv2.imshow("State Estimator", image)
 
+        # Note: This is somewhat experimental
         try:
-            # This is somewhat experimental
-            # TODO Eventually, we should get to the point where we are printing our own version of dataSet.json
-
             # Compare to data set
             data = dataset[index]
 
