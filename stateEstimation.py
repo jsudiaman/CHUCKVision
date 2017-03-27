@@ -46,7 +46,7 @@ def analyze(filename):
 
     # Find the cornhole.
     circle_mask = cv2.inRange(hsv, np.array(cornhole[0], dtype="uint8"), np.array(cornhole[1], dtype="uint8"))
-    cornhole_circ = draw_cornhole(image, circle_mask, board_rect)
+    cornhole_circ = draw_cornhole2(image, board_rect)
 
     # Return the image and its annotations.
     # TODO Possibly return (image, jsonObject) instead
@@ -88,45 +88,45 @@ def draw_board(image, mask):
     return x, y, w, h
 
 
-def draw_cornhole(image, mask, board_rect=None):
-    """
-    Draws the cornhole using color filtering.
-
-    :param image: image to annotate
-    :param mask: mask used to find contours
-    :param board_rect: rectangular boundaries of the board
-    :return: (x, y, r) where (x, y) is the center and r is the radius of the circle.
-    """
-    board_x, board_y, board_width, board_height = board_rect
-    contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Discard contours outside the board
-    if board_rect is not None:
-        cs_in_board = []
-        for c in contours:
-            M = cv2.moments(c)
-            if M["m00"] > 0:
-                x = int(M["m10"] / M["m00"])
-                y = int(M["m01"] / M["m00"])
-                if board_x <= x <= board_x + board_width and board_y <= y <= board_y + board_height:
-                    cs_in_board.append(c)
-        contours = cs_in_board
-
-    while len(contours) > 0:
-        # Enclosing circle around the contours
-        (x, y), r = cv2.minEnclosingCircle(np.concatenate(contours))
-        x, y, r = int(x), int(y), int(r)
-
-        # Ensure that circle is reasonably sized
-        if not min_ch_radius <= r <= max_ch_radius:
-            break
-
-        # Circle looks good, so draw it
-        cv2.circle(image, (x, y), r, (0, 255, 255), 4)
-        return x, y, r
-
-    # Fallback to Hough transform
-    return draw_cornhole2(image, board_rect)
+# def draw_cornhole(image, mask, board_rect=None):
+#     """
+#     Draws the cornhole using color filtering.
+#
+#     :param image: image to annotate
+#     :param mask: mask used to find contours
+#     :param board_rect: rectangular boundaries of the board
+#     :return: (x, y, r) where (x, y) is the center and r is the radius of the circle.
+#     """
+#     board_x, board_y, board_width, board_height = board_rect
+#     contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#
+#     # Discard contours outside the board
+#     if board_rect is not None:
+#         cs_in_board = []
+#         for c in contours:
+#             M = cv2.moments(c)
+#             if M["m00"] > 0:
+#                 x = int(M["m10"] / M["m00"])
+#                 y = int(M["m01"] / M["m00"])
+#                 if board_x <= x <= board_x + board_width and board_y <= y <= board_y + board_height:
+#                     cs_in_board.append(c)
+#         contours = cs_in_board
+#
+#     while len(contours) > 0:
+#         # Enclosing circle around the contours
+#         (x, y), r = cv2.minEnclosingCircle(np.concatenate(contours))
+#         x, y, r = int(x), int(y), int(r)
+#
+#         # Ensure that circle is reasonably sized
+#         if not min_ch_radius <= r <= max_ch_radius:
+#             break
+#
+#         # Circle looks good, so draw it
+#         cv2.circle(image, (x, y), r, (0, 255, 255), 4)
+#         return x, y, r
+#
+#     # Fallback to Hough transform
+#     return draw_cornhole2(image, board_rect)
 
 
 def draw_cornhole2(image, board_rect=None):
@@ -137,23 +137,26 @@ def draw_cornhole2(image, board_rect=None):
     :param board_rect: rectangular boundaries of the board
     :return: (x, y, r) where (x, y) is the center and r is the radius of the circle.
     """
+    # Do transformation
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.2, 100, param1=50, param2=30,
-                               minRadius=min_ch_radius, maxRadius=max_ch_radius)
-
-    # Draw circles
-    # TODO If more than one hole found in the board, which one is the true cornhole?
+    circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.2, 100, param1=50, param2=30, minRadius=min_ch_radius,
+                               maxRadius=max_ch_radius)
     if circles is None:
         return None
     circles = np.round(circles[0, :]).astype("int")
+
+    # TODO If more than one hole is found in the board, which one is the true cornhole?
+    # (Insert Highlander reference here)
     for (x, y, r) in circles:
         # Ensure that the hole is contained within the board
         if board_rect is not None:
-            board_x, board_y, board_width, board_height = board_rect
-            if not (board_x <= x <= board_x + board_width and board_y <= y <= board_y + board_height):
+            bx, by, bw, bh = board_rect
+            if not (bx <= x <= bx + bw and by <= y <= by + bh):
                 continue
+
+        # Draw circle
         cv2.circle(image, (x, y), r, (0, 255, 255), 4)
-        return x, y, r
+    return 0, 0, 0  # TODO This is a placeholder
 
 
 def center(rect):
