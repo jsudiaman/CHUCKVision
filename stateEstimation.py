@@ -215,17 +215,6 @@ def center(rect):
     return (x + x + w) / 2, (y + y + h) / 2
 
 
-def error(exp, real):
-    """
-    Calculate percent error of an experimental value.
-
-    :param exp: experimental value
-    :param real: precise value
-    :return: Percent error err such that 0 <= err <= 100.
-    """
-    return float(abs(exp - real)) / abs(real) * 100
-
-
 if __name__ == '__main__':
     # Settings
     index = 0
