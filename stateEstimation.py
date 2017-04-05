@@ -1,4 +1,6 @@
-"""Components for CHUCK state estimation."""
+"""
+Components for CHUCK state estimation.
+"""
 import math
 from os.path import basename
 
@@ -36,19 +38,19 @@ def analyze(filename):
     red1 = cv2.inRange(hsv, np.array(lower_red[0], dtype="uint8"), np.array(lower_red[1], dtype="uint8"))
     red2 = cv2.inRange(hsv, np.array(upper_red[0], dtype="uint8"), np.array(upper_red[1], dtype="uint8"))
     red_mask = cv2.bitwise_or(red1, red2)
-    red_rects = draw_beanbags(image, red_mask, (0, 0, 255))
+    red_rects = _draw_beanbags(image, red_mask, (0, 0, 255))
 
     # Find blue beanbags.
     blue_mask = cv2.inRange(hsv, np.array(blue_beanbags[0], dtype="uint8"), np.array(blue_beanbags[1], dtype="uint8"))
-    blue_rects = draw_beanbags(image, blue_mask, (255, 0, 0))
+    blue_rects = _draw_beanbags(image, blue_mask, (255, 0, 0))
 
     # Find the board.
     board_mask = cv2.inRange(hsv, np.array(board[0], dtype="uint8"), np.array(board[1], dtype="uint8"))
-    board_rect = draw_board(image, board_mask)
+    board_rect = _draw_board(image, board_mask)
 
     # Find the cornhole.
     circle_mask = cv2.inRange(hsv, np.array(cornhole[0], dtype="uint8"), np.array(cornhole[1], dtype="uint8"))
-    cornhole_circ = draw_cornhole(image, circle_mask, board_rect)
+    cornhole_circ = _draw_cornhole(image, circle_mask, board_rect)
 
     # Prepare annotations, which should be one-to-one with dataSet.json.
     # Filename
@@ -61,7 +63,7 @@ def analyze(filename):
         _, _, w, h = rect
         beanbag = {
             'bounded_rectangle': {
-                'center': center(rect),
+                'center': _center(rect),
                 'height': h,
                 'width': w
             },
@@ -74,7 +76,7 @@ def analyze(filename):
     cx, cy, cr = cornhole_circ
     _, _, bw, bh = board_rect
     anns['board'] = {
-        'center': center(board_rect),
+        'center': _center(board_rect),
         'hole': {
             'center': (cx, cy),
             'radius': cr
@@ -89,7 +91,7 @@ def analyze(filename):
     return image, anns
 
 
-def draw_beanbags(image, mask, color):
+def _draw_beanbags(image, mask, color):
     """
     Draws bounding boxes around beanbags.
 
@@ -108,7 +110,7 @@ def draw_beanbags(image, mask, color):
     return rects
 
 
-def draw_board(image, mask):
+def _draw_board(image, mask):
     """
     Draws bounding box around the board.
 
@@ -124,7 +126,7 @@ def draw_board(image, mask):
     return x, y, w, h
 
 
-def draw_cornhole(image, mask, board_rect=None):
+def _draw_cornhole(image, mask, board_rect=None):
     """
     Draws the cornhole using color filtering.
 
@@ -162,10 +164,10 @@ def draw_cornhole(image, mask, board_rect=None):
         return x, y, r
 
     # Fallback to Hough transform
-    return draw_cornhole2(image, board_rect)
+    return _draw_cornhole2(image, board_rect)
 
 
-def draw_cornhole2(image, board_rect=None):
+def _draw_cornhole2(image, board_rect=None):
     """
     Draws the cornhole using circular Hough transform.
 
@@ -204,7 +206,7 @@ def draw_cornhole2(image, board_rect=None):
     return ch
 
 
-def center(rect):
+def _center(rect):
     """
     Calculate the center of a rectangle using the midpoint formula.
 
@@ -213,23 +215,3 @@ def center(rect):
     """
     x, y, w, h = rect
     return (x + x + w) / 2, (y + y + h) / 2
-
-
-if __name__ == '__main__':
-    # Settings
-    index = 0
-    total_imgs = 197
-
-    # UI
-    while index <= total_imgs:
-        image, anns = analyze("dataset/img/%04d.jpg" % index)
-        cv2.imshow("State Estimator", image)
-
-        # Left key = Go to previous image. Right key = Go to next image. Escape key = Quit.
-        key = cv2.waitKey(0)
-        if key == 63234 or key == 2424832:
-            index = max(0, index - 1)
-        elif key == 27:
-            break
-        elif key == 63235 or key == 2555904:
-            index += 1
