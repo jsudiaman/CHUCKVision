@@ -11,8 +11,10 @@ if __name__ == '__main__':
 
     # UI
     while index <= total_imgs:
-        image, anns = analyze("dataset/img/%04d.jpg" % index)
-        cv2.imshow("State Estimator", image)
+        filename = "%04d.jpg" % index
+        image, anns = analyze("dataset/img/" + filename)
+        cv2.putText(image, filename, (0, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.CV_AA)
+        cv2.imshow("CHUCKVision", image)
 
         # Left key = Go to previous image. Right key = Go to next image. Escape key = Quit.
         key = cv2.waitKey(0)
