@@ -62,19 +62,25 @@ if __name__ == '__main__':
             real = dataset[i]
 
             # Beanbags
-            real_beanbags = [beanbag['bounded_rectangle'] for beanbag in real['beanBags']]
-            real_beanbags = [(b['center'][0], b['center'][1], b['width'], b['height']) for b in real_beanbags]
-            exp_beanbags = [beanbag['bounded_rectangle'] for beanbag in exp['beanBags']]
-            exp_beanbags = [(b['center'][0], b['center'][1], b['width'], b['height']) for b in exp_beanbags]
-            index = 1
+            real_beanbags = real['beanBags']
+            exp_beanbags = exp['beanBags']
             for beanbag in exp_beanbags:
-                real_bbx, real_bby, real_bbw, real_bbh = closest_rect(beanbag, real_beanbags)
-                exp_bbx, exp_bby, exp_bbw, exp_bbh = beanbag
-                print >> point, point_format % (ref, "Beanbag %d X" % index, exp_bbx, real_bbx, error(exp_bbx, real_bbx))
-                print >> point, point_format % (ref, "Beanbag %d Y" % index, exp_bby, real_bby, error(exp_bby, real_bby))
-                print >> point, point_format % (ref, "Beanbag %d Height" % index, exp_bbh, real_bbh, error(exp_bbh, real_bbh))
-                print >> point, point_format % (ref, "Beanbag %d Width" % index, exp_bbw, real_bbw, error(exp_bbw, real_bbw))
-                index += 1
+                # Get beanbag color
+                color = beanbag['color']
+
+                # Convert to rects
+                real_rects = [b['bounded_rectangle'] for b in real_beanbags if b['color'] == color]
+                real_rects = [(r['center'][0], r['center'][1], r['width'], r['height']) for r in real_rects]
+                exp_rect = beanbag['bounded_rectangle']
+                exp_rect = exp_rect['center'][0], exp_rect['center'][1], exp_rect['width'], exp_rect['height']
+
+                # Make comparisons
+                real_bbx, real_bby, real_bbw, real_bbh = closest_rect(exp_rect, real_rects)
+                exp_bbx, exp_bby, exp_bbw, exp_bbh = exp_rect
+                print >> point, point_format % (ref, "%s Beanbag X" % color.capitalize(), exp_bbx, real_bbx, error(exp_bbx, real_bbx))
+                print >> point, point_format % (ref, "%s Beanbag Y" % color.capitalize(), exp_bby, real_bby, error(exp_bby, real_bby))
+                print >> point, point_format % (ref, "%s Beanbag Height" % color.capitalize(), exp_bbh, real_bbh, error(exp_bbh, real_bbh))
+                print >> point, point_format % (ref, "%s Beanbag Width" % color.capitalize(), exp_bbw, real_bbw, error(exp_bbw, real_bbw))
 
             # Board
             real_board = real['board']
