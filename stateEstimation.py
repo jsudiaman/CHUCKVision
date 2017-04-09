@@ -1,7 +1,7 @@
 """
 Components for CHUCK state estimation.
 """
-import math
+from math import sqrt
 from os.path import basename
 
 import cv2
@@ -11,8 +11,13 @@ import numpy as np
 lower_red = ([0, 70, 50], [10, 255, 255])
 upper_red = ([170, 70, 50], [180, 255, 255])
 blue_beanbags = ([100, 120, 0], [140, 255, 255])
-board = ([103, 31, 120], [105, 47, 135])
-cornhole = ([21, 38, 96], [29, 58, 142])
+board = ([30, 2, 235], [120, 5, 238])
+
+# Board values
+board_u_margin = 0
+board_r_margin = 50
+board_d_margin = 0
+board_l_margin = 0
 
 # Beanbag values
 min_beanbag_area = 100
@@ -23,11 +28,12 @@ max_ch_radius = 50
 dy_from_board = 85
 
 
-def analyze(filename):
+def analyze(filename, detailed=False):
     """
     Scan the source image for beanbags, board, and cornhole. Detected objects are annotated using rectangles or circles.
 
     :param filename: location of the source file
+    :param detailed: if true, show the individual contours / Hough circles which form the boundaries
     :return: (image, red_rects, blue_rects, board_rect, cornhole_circ)
     """
     # Load the image.
@@ -38,19 +44,18 @@ def analyze(filename):
     red1 = cv2.inRange(hsv, np.array(lower_red[0], dtype="uint8"), np.array(lower_red[1], dtype="uint8"))
     red2 = cv2.inRange(hsv, np.array(upper_red[0], dtype="uint8"), np.array(upper_red[1], dtype="uint8"))
     red_mask = cv2.bitwise_or(red1, red2)
-    red_rects = _draw_beanbags(image, red_mask, (0, 0, 255))
+    red_rects = _draw_beanbags(image, red_mask, (0, 0, 255), detailed)
 
     # Find blue beanbags.
     blue_mask = cv2.inRange(hsv, np.array(blue_beanbags[0], dtype="uint8"), np.array(blue_beanbags[1], dtype="uint8"))
-    blue_rects = _draw_beanbags(image, blue_mask, (255, 0, 0))
+    blue_rects = _draw_beanbags(image, blue_mask, (255, 0, 0), detailed)
 
     # Find the board.
     board_mask = cv2.inRange(hsv, np.array(board[0], dtype="uint8"), np.array(board[1], dtype="uint8"))
-    board_rect = _draw_board(image, board_mask)
+    board_rect = _draw_board(image, board_mask, detailed)
 
     # Find the cornhole.
-    circle_mask = cv2.inRange(hsv, np.array(cornhole[0], dtype="uint8"), np.array(cornhole[1], dtype="uint8"))
-    cornhole_circ = _draw_cornhole(image, circle_mask, board_rect)
+    cornhole_circ = _draw_cornhole(image, detailed, board_rect)
 
     # Prepare annotations, which should be one-to-one with dataSet.json.
     # Filename
@@ -91,13 +96,14 @@ def analyze(filename):
     return image, anns
 
 
-def _draw_beanbags(image, mask, color):
+def _draw_beanbags(image, mask, color, show_contours):
     """
     Draws bounding boxes around beanbags.
 
     :param image: image to annotate
     :param mask: mask used to find contours
     :param color: color of the bounding boxes (B,G,R)
+    :param show_contours: if true, show the individual contours which form the bounding boxes
     :return: List of (x, y, w, h) tuples where (x, y) is the top-left corner, w is the width, and h is the height of each rectangle.
     """
     rects = []
@@ -105,79 +111,58 @@ def _draw_beanbags(image, mask, color):
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         if w * h >= min_beanbag_area:
+            if show_contours:
+                cv2.drawContours(image, c, -1, color, 4)
             cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
             rects.append((x, y, w, h))
     return rects
 
 
-def _draw_board(image, mask):
+def _draw_board(image, mask, show_contours):
     """
     Draws bounding box around the board.
 
     :param image: image to annotate
     :param mask: mask used to find contours
+    :param show_contours: if true, show the individual contours which form the bounding box
     :return: (x, y, w, h) tuple where (x, y) is the top-left corner, w is the width, and h is the height of the rectangle.
     """
     contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Discard contours outside the margins
+    board_cs = []
+    height, width = image.shape[:2]
+    for c in contours:
+        M = cv2.moments(c)
+        if M["m00"] > 0:
+            x = int(M["m10"] / M["m00"])
+            y = int(M["m01"] / M["m00"])
+            if board_l_margin <= x <= width - board_r_margin and board_u_margin <= y <= height - board_d_margin:
+                board_cs.append(c)
+    contours = board_cs
+
+    # Bounding box around the contours
     if len(contours) == 0:
         return None
+    if show_contours:
+        cv2.drawContours(image, contours, -1, (0, 255, 0), 4)
     x, y, w, h = cv2.boundingRect(np.concatenate(contours))
     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
     return x, y, w, h
 
 
-def _draw_cornhole(image, mask, board_rect=None):
-    """
-    Draws the cornhole using color filtering.
-
-    :param image: image to annotate
-    :param mask: mask used to find contours
-    :param board_rect: rectangular boundaries of the board
-    :return: (x, y, r) where (x, y) is the center and r is the radius of the circle, or (0, 0, 0) if none found.
-    """
-    board_x, board_y, board_width, board_height = board_rect
-    contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Discard contours outside the board
-    if board_rect is not None:
-        cs_in_board = []
-        for c in contours:
-            M = cv2.moments(c)
-            if M["m00"] > 0:
-                x = int(M["m10"] / M["m00"])
-                y = int(M["m01"] / M["m00"])
-                if board_x <= x <= board_x + board_width and board_y <= y <= board_y + board_height:
-                    cs_in_board.append(c)
-        contours = cs_in_board
-
-    while len(contours) > 0:
-        # Enclosing circle around the contours
-        (x, y), r = cv2.minEnclosingCircle(np.concatenate(contours))
-        x, y, r = int(x), int(y), int(r)
-
-        # Ensure that circle is reasonably sized
-        if not min_ch_radius <= r <= max_ch_radius:
-            break
-
-        # Circle looks good, so draw it
-        cv2.circle(image, (x, y), r, (0, 255, 255), 4)
-        return x, y, r
-
-    # Fallback to Hough transform
-    return _draw_cornhole2(image, board_rect)
-
-
-def _draw_cornhole2(image, board_rect=None):
+def _draw_cornhole(image, show_all, board_rect=None):
     """
     Draws the cornhole using circular Hough transform.
 
     :param image: image to annotate
+    :param show_all: if true, show all circles found by the transform. Extra circles will be drawn differently from the cornhole
     :param board_rect: rectangular boundaries of the board
     :return: (x, y, r) where (x, y) is the center and r is the radius of the circle, or (0, 0, 0) if none found.
     """
     # Do transformation
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.2, 100, param1=50, param2=30, minRadius=min_ch_radius, maxRadius=max_ch_radius)
+    circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.2, 100, None, 50, 30, min_ch_radius, max_ch_radius)
     ch = (0, 0, 0)
     if circles is None:
         return ch
@@ -186,22 +171,27 @@ def _draw_cornhole2(image, board_rect=None):
     # Find circle with lowest distance from the expected position
     lo_dist = float('inf')
     for (x, y, r) in circles:
+        if show_all:
+            cv2.circle(image, (x, y), r, (0, 255, 255), 1)
+
+        # If no board to reference, find the one closest to the top-middle of the entire image
         if board_rect is None:
-            continue
+            height, width = image.shape[:2]
+            dist = sqrt((x - width / 2) ** 2 + (y - 0) ** 2)
+        else:
+            # Ensure that the hole is contained within the board
+            bx, by, bw, bh = board_rect
+            if not (bx <= x <= bx + bw and by <= y <= by + bh):
+                continue
 
-        # Ensure that the hole is contained within the board
-        bx, by, bw, bh = board_rect
-        if not (bx <= x <= bx + bw and by <= y <= by + bh):
-            continue
-
-        # Find distance
-        dist = math.sqrt((x - (bx + bw / 2)) ** 2 + ((y - (by + dy_from_board)) ** 2))
+            # Find distance
+            dist = sqrt((x - (bx + bw / 2)) ** 2 + ((y - (by + dy_from_board)) ** 2))
         if dist < lo_dist:
             lo_dist = dist
             ch = x, y, r
 
     # Return the cornhole
-    x, y, r, = ch
+    x, y, r = ch
     cv2.circle(image, (x, y), r, (0, 255, 255), 4)
     return ch
 
