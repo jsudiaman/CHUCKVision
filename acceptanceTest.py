@@ -2,6 +2,9 @@
 Generates CSV files which compare the stateEstimation module to the given dataSet.json.
 
 pointCompare.csv: Fine-grained comparison which uses exact points and dimensions.
+
+scoreCompare.csv: High level comparison which uses the score. Cancellation scoring is used, i.e., positive score
+indicates that red will score, and negative score indicates that blue will score.
 """
 import json
 
@@ -46,14 +49,35 @@ def closest_rect(rect, rects):
     return closest
 
 
+def score(anns):
+    """
+    From a set of annotations (produced by stateEstimation or dataSet.json), get the score using cancellation scoring.
+    
+    :param anns: Annotations for a single image 
+    :return: The score (> 0 if red is scoring, < 0 if blue is scoring, 0 if neither are scoring).
+    """
+    s = 0
+    beanbags = anns['beanBags']
+    for b in beanbags:
+        color = b['color']
+        location = b['location']
+        if location == 'in':
+            s += 3 if color == 'red' else -3
+        elif location == 'on':
+            s += 1 if color == 'red' else -1
+    return s
+
+
 if __name__ == '__main__':
     total_imgs = 197
 
     # Compare dataSet to stateEstimation
-    with open('dataset/dataSet.json') as dataset_file, open("pointCompare.csv", "w") as point:
+    with open('dataset/dataSet.json') as dataset_file, open("pointCompare.csv", "w") as pc, open("scoreCompare.csv", "w") as sc:
         dataset = json.load(dataset_file)
         point_format = "%s,%s,%d,%d,%.1f"
-        print >> point, "Reference,Value,Experimental,Actual,% Error"
+        score_format = "%s,%d,%d,%d"
+        print >> pc, "Reference,Value,Experimental,Actual,% Error"
+        print >> sc, "Reference,Experimental,Actual,Difference"
 
         # Loop through data set
         for i in xrange(0, total_imgs + 1):
@@ -77,10 +101,10 @@ if __name__ == '__main__':
                 # Make comparisons
                 real_bbx, real_bby, real_bbw, real_bbh = closest_rect(exp_rect, real_rects)
                 exp_bbx, exp_bby, exp_bbw, exp_bbh = exp_rect
-                print >> point, point_format % (ref, "%s Beanbag X" % color.capitalize(), exp_bbx, real_bbx, error(exp_bbx, real_bbx))
-                print >> point, point_format % (ref, "%s Beanbag Y" % color.capitalize(), exp_bby, real_bby, error(exp_bby, real_bby))
-                print >> point, point_format % (ref, "%s Beanbag Height" % color.capitalize(), exp_bbh, real_bbh, error(exp_bbh, real_bbh))
-                print >> point, point_format % (ref, "%s Beanbag Width" % color.capitalize(), exp_bbw, real_bbw, error(exp_bbw, real_bbw))
+                print >> pc, point_format % (ref, "%s Beanbag X" % color.capitalize(), exp_bbx, real_bbx, error(exp_bbx, real_bbx))
+                print >> pc, point_format % (ref, "%s Beanbag Y" % color.capitalize(), exp_bby, real_bby, error(exp_bby, real_bby))
+                print >> pc, point_format % (ref, "%s Beanbag Height" % color.capitalize(), exp_bbh, real_bbh, error(exp_bbh, real_bbh))
+                print >> pc, point_format % (ref, "%s Beanbag Width" % color.capitalize(), exp_bbw, real_bbw, error(exp_bbw, real_bbw))
 
             # Board
             real_board = real['board']
@@ -89,10 +113,10 @@ if __name__ == '__main__':
             exp_bx, exp_by = exp['board']['center']
             real_bw, real_bh = real_board['size']['width'], real_board['size']['height']
             exp_bw, exp_bh = exp_board['size']['width'], exp_board['size']['height']
-            print >> point, point_format % (ref, "Board X", exp_bx, real_bx, error(exp_bx, real_bx))
-            print >> point, point_format % (ref, "Board Y", exp_by, real_by, error(exp_by, real_by))
-            print >> point, point_format % (ref, "Board Height", exp_bh, real_bh, error(exp_bh, real_bh))
-            print >> point, point_format % (ref, "Board Width", exp_bw, real_bw, error(exp_bw, real_bw))
+            print >> pc, point_format % (ref, "Board X", exp_bx, real_bx, error(exp_bx, real_bx))
+            print >> pc, point_format % (ref, "Board Y", exp_by, real_by, error(exp_by, real_by))
+            print >> pc, point_format % (ref, "Board Height", exp_bh, real_bh, error(exp_bh, real_bh))
+            print >> pc, point_format % (ref, "Board Width", exp_bw, real_bw, error(exp_bw, real_bw))
 
             # Cornhole
             if 'hole' in real_board:
@@ -101,6 +125,11 @@ if __name__ == '__main__':
                 (real_chx, real_chy), real_chr = real_ch['center'], real_ch['radius']
                 (exp_chx, exp_chy), exp_chr = exp_ch['center'], exp_ch['radius']
                 if exp_chr > 0:
-                    print >> point, point_format % (ref, "Cornhole X", exp_chx, real_chx, error(exp_chx, real_chx))
-                    print >> point, point_format % (ref, "Cornhole Y", exp_chy, real_chy, error(exp_chy, real_chy))
-                    print >> point, point_format % (ref, "Cornhole Radius", exp_chr, real_chr, error(exp_chr, real_chr))
+                    print >> pc, point_format % (ref, "Cornhole X", exp_chx, real_chx, error(exp_chx, real_chx))
+                    print >> pc, point_format % (ref, "Cornhole Y", exp_chy, real_chy, error(exp_chy, real_chy))
+                    print >> pc, point_format % (ref, "Cornhole Radius", exp_chr, real_chr, error(exp_chr, real_chr))
+
+            # Score
+            exp_score = score(exp)
+            real_score = score(real)
+            print >> sc, score_format % (ref, exp_score, real_score, abs(exp_score - real_score))

@@ -21,6 +21,8 @@ board_l_margin = 0
 
 # Beanbag values
 min_beanbag_area = 100
+max_beanbag_width = 109
+max_beanbag_height = 109
 
 # Cornhole values
 min_ch_radius = 30
@@ -73,7 +75,7 @@ def analyze(filename, detailed=False):
                 'width': w
             },
             'color': color,
-            'location': None  # TODO
+            'location': _location(rect, board_rect, cornhole_circ)
         }
         anns['beanBags'].append(beanbag)
 
@@ -113,8 +115,34 @@ def _draw_beanbags(image, mask, color, show_contours):
         if w * h >= min_beanbag_area:
             if show_contours:
                 cv2.drawContours(image, c, -1, color, 4)
-            cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
-            rects.append((x, y, w, h))
+
+            # Beanbag is too big, split it
+            # w ~ 95 h ~ 95
+            # there are a few examples of a bean bag being larger than 106 (x2), along with two+ being smaller (x8)
+            if w > max_beanbag_width:
+                if h > w:
+                    half_h = h / 2
+                    cv2.rectangle(image, (x, y), (x + w, y + half_h), color, 2)
+                    rects.append((x, y, w, half_h))
+                    cv2.rectangle(image, (x, y), (x + w, y + half_h + half_h), color, 2)
+                    rects.append((x, y + half_h, w, half_h))
+                else:
+                    half_w = w / 2
+                    cv2.rectangle(image, (x, y), (x + half_w, y + h), color, 2)
+                    rects.append((x, y, half_w, h))
+                    cv2.rectangle(image, (x, y), (x + half_w + half_w, y + h), color, 2)
+                    rects.append((x + half_w, y, half_w, h))
+            elif h > max_beanbag_height:
+                half_h = h / 2
+                cv2.rectangle(image, (x, y), (x + w, y + half_h), color, 2)
+                rects.append((x, y, w, half_h))
+                cv2.rectangle(image, (x, y), (x + w, y + half_h + half_h), color, 2)
+                rects.append((x, y + half_h, w, half_h))
+
+            # Beanbag is not too big
+            else:
+                cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+                rects.append((x, y, w, h))
     return rects
 
 
@@ -205,3 +233,30 @@ def _center(rect):
     """
     x, y, w, h = rect
     return (x + x + w) / 2, (y + y + h) / 2
+
+
+def _location(beanbag, board_rect, cornhole_circ):
+    """
+    Determine the location of a beanbag.
+    
+    :param beanbag: (x, y, w, h) tuple where (x, y) is the top-left corner, w is the width, and h is the height of the beanbag
+    :param board_rect: (x, y, w, h) tuple where (x, y) is the top-left corner, w is the width, and h is the height of the board
+    :param cornhole_circ: (x, y, r) where (x, y) is the center and r is the radius of the cornhole
+    :return: "in" if the beanbag is in the cornhole (3 points), "on" if it is on the board (1 point), or "off" if it is 
+    """
+    # If missing board or cornhole, we can't determine the location.
+    if board_rect is None:
+        return None
+    elif cornhole_circ is None:
+        return None
+
+    # Determine the location.
+    mid_x, mid_y = _center(beanbag)
+    bx, by, bw, bh = board_rect
+    cx, cy, cr = cornhole_circ
+
+    if bx < mid_x < bx + bw and by < mid_y < by + bh:
+        if cx + cr > mid_x and cy + cr > mid_y and cx - cr < mid_x and cy - cr < mid_y:
+            return "in"
+        return "on"
+    return "off"
