@@ -14,6 +14,10 @@ blue team is scoring). Use the LEFT and RIGHT arrow keys to navigate the dataset
 program. If run with the `--detailed` option, the GUI will display individual contours in addition to the
 boundaries.
 
+**Sample Run**
+
+<img src="https://raw.githubusercontent.com/sudiamanj/CHUCKVision/master/misc/gui_sample_run.png" alt="gui_sample_run" width="441" height="480">
+
 ## Acceptance Test
 Command: `python acceptanceTest.py`
 
@@ -39,7 +43,7 @@ cropped objects to determine their respective HSV boundaries in
 | image     | Path to the image                                                                                                                                                                                                             |
 | tolerance | Error tolerance (between 0 and 50). Specifically, this argument controls the *percentiles* of HSV values to include in the range. For instance, a tolerance of 5 will return HSV values between the 5th and 95th percentiles. |
 
-Sample Run:
+**Sample Run**
 ```
 $ python hsvRange.py --image dataset/img/cropped/board.png --tolerance 30
 bounds = ([30, 2, 235], [120, 5, 238])
