@@ -36,7 +36,7 @@ def analyze(filename, detailed=False):
 
     :param filename: location of the source file
     :param detailed: if true, show the individual contours / Hough circles which form the boundaries
-    :return: (image, red_rects, blue_rects, board_rect, cornhole_circ)
+    :return: (image, anns): the image and its annotations
     """
     # Load the image.
     image = cv2.imread(filename)
@@ -260,3 +260,22 @@ def _location(beanbag, board_rect, cornhole_circ):
             return "in"
         return "on"
     return "off"
+
+
+def score(anns):
+    """
+    From a set of annotations (produced by stateEstimation or dataSet.json), get the score using cancellation scoring.
+
+    :param anns: Annotations for a single image 
+    :return: The score (> 0 if red is scoring, < 0 if blue is scoring, 0 if neither are scoring).
+    """
+    s = 0
+    beanbags = anns['beanBags']
+    for b in beanbags:
+        color = b['color']
+        location = b['location']
+        if location == 'in':
+            s += 3 if color == 'red' else -3
+        elif location == 'on':
+            s += 1 if color == 'red' else -1
+    return s

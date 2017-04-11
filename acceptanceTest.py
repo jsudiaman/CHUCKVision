@@ -10,7 +10,7 @@ import json
 
 import math
 
-from stateEstimation import analyze
+from stateEstimation import analyze, score
 
 
 def error(exp, real):
@@ -47,25 +47,6 @@ def closest_rect(rect, rects):
             min_dist = dist
             closest = r
     return closest
-
-
-def score(anns):
-    """
-    From a set of annotations (produced by stateEstimation or dataSet.json), get the score using cancellation scoring.
-    
-    :param anns: Annotations for a single image 
-    :return: The score (> 0 if red is scoring, < 0 if blue is scoring, 0 if neither are scoring).
-    """
-    s = 0
-    beanbags = anns['beanBags']
-    for b in beanbags:
-        color = b['color']
-        location = b['location']
-        if location == 'in':
-            s += 3 if color == 'red' else -3
-        elif location == 'on':
-            s += 1 if color == 'red' else -1
-    return s
 
 
 if __name__ == '__main__':
