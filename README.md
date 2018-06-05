@@ -19,13 +19,13 @@ boundaries.
 
 **Sample Run**
 
-<img src="https://raw.githubusercontent.com/sudiamanj/CHUCKVision/master/misc/gui_sample_run.png" alt="gui_sample_run" width="441" height="480">
+<img src="/misc/gui_sample_run.png" alt="gui_sample_run" width="441" height="480">
 
 ## Acceptance Test
 Command: `python acceptanceTest.py`
 
 The acceptance test will generate CSV files which compare estimations to the actual values from
-[dataSet.json](https://github.com/sudiamanj/CHUCKVision/blob/master/dataset/dataSet.json).
+[dataSet.json](/dataset/dataSet.json).
 
 | File             | Description                                                     |
 |------------------|-----------------------------------------------------------------|
@@ -39,7 +39,7 @@ Command: `python hsvRange.py --image IMAGE [--tolerance TOLERANCE]`
 
 This tool analyzes the given image and returns bounds on the HSV values of its pixels. Useful for scanning
 cropped objects to determine their respective HSV boundaries in
-[stateEstimation.py](https://github.com/sudiamanj/CHUCKVision/blob/master/stateEstimation.py).
+[stateEstimation.py](/stateEstimation.py).
 
 | Argument  | Description                                                                                                                                                                                                                   |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
