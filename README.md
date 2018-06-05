@@ -1,7 +1,7 @@
 # CHUCKVision
 Vision-based state estimation for [CHUCK](https://github.com/cornhole) (a Cornhole playing robot).
 
-- [Project Summary](http://docdro.id/UiuQXpS)
+- [Project Summary](/misc/Summary%202017-04-11.pdf)
 
 ## Dependencies
 - [Python 2.7](https://www.python.org/downloads/)
