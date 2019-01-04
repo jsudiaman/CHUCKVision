@@ -40,11 +40,11 @@ if __name__ == '__main__':
         # Show image.
         cv2.imshow("CHUCKVision", image)
 
-        # Left key = Go to previous image. Right key = Go to next image. Escape key = Quit.
-        key = cv2.waitKeyEx(0)
-        if key == 63234 or key == 2424832:
+        # J key = Go to previous image. L key = Go to next image. Escape key = Quit.
+        key = cv2.waitKey(0)
+        if key == 106:
             index = max(0, index - 1)
         elif key == 27:
             break
-        elif key == 63235 or key == 2555904:
+        elif key == 108:
             index += 1

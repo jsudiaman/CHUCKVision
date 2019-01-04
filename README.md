@@ -18,7 +18,7 @@ Command: `python gui.py [--detailed]`
 
 The GUI goes through the dataset, drawing boundaries around key objects and displaying the score. The
 score is colored with respect to which team is scoring (i.e. red text if red team is scoring, blue text if
-blue team is scoring). Use the LEFT and RIGHT arrow keys to navigate the dataset, and ESC to exit the
+blue team is scoring). Use the J and L keys to navigate the dataset, and ESC to exit the
 program. If run with the `--detailed` option, the GUI will display individual contours in addition to the
 boundaries.
 
