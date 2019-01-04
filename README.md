@@ -8,7 +8,7 @@ Vision-based state estimation for [CHUCK](https://github.com/cornhole) (a Cornho
 - [Pipenv](https://pipenv.readthedocs.io)
 
 ## Setup
-```Shell
+```
 pipenv install
 pipenv shell
 ```
