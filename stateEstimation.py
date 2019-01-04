@@ -109,7 +109,7 @@ def _draw_beanbags(image, mask, color, show_contours):
     :return: List of (x, y, w, h) tuples where (x, y) is the top-left corner, w is the width, and h is the height of each rectangle.
     """
     rects = []
-    contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    _, contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         if w * h >= min_beanbag_area:
@@ -155,7 +155,7 @@ def _draw_board(image, mask, show_contours):
     :param show_contours: if true, show the individual contours which form the bounding box
     :return: (x, y, w, h) tuple where (x, y) is the top-left corner, w is the width, and h is the height of the rectangle.
     """
-    contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    _, contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Discard contours outside the margins
     board_cs = []
@@ -190,7 +190,7 @@ def _draw_cornhole(image, show_all, board_rect=None):
     """
     # Do transformation
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.2, 100, None, 50, 30, min_ch_radius, max_ch_radius)
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, None, 50, 30, min_ch_radius, max_ch_radius)
     ch = (0, 0, 0)
     if circles is None:
         return ch

@@ -4,9 +4,14 @@ Vision-based state estimation for [CHUCK](https://github.com/cornhole) (a Cornho
 - [Project Summary](/misc/Summary%202017-04-11.pdf)
 
 ## Dependencies
-- [Python 2.7](https://www.python.org/downloads/)
-- [NumPy](http://www.numpy.org/)
-- [OpenCV](http://opencv.org/)
+- Python 2.7
+- [Pipenv](https://pipenv.readthedocs.io)
+
+## Setup
+```Shell
+pipenv install
+pipenv shell
+```
 
 ## GUI
 Command: `python gui.py [--detailed]`

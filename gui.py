@@ -25,7 +25,7 @@ if __name__ == '__main__':
         image, anns = analyze("dataset/img/" + filename, args.detailed)
 
         # Display filename.
-        cv2.putText(image, filename, (0, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.CV_AA)
+        cv2.putText(image, filename, (0, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         # Display score in the color of the scoring team.
         s = score(anns)
@@ -35,13 +35,13 @@ if __name__ == '__main__':
             s_color = (255, 0, 0)
         else:
             s_color = (255, 255, 255)
-        cv2.putText(image, "Score: %d" % abs(s), (0, 715), cv2.FONT_HERSHEY_SIMPLEX, 1, s_color, 2, cv2.CV_AA)
+        cv2.putText(image, "Score: %d" % abs(s), (0, 715), cv2.FONT_HERSHEY_SIMPLEX, 1, s_color, 2, cv2.LINE_AA)
 
         # Show image.
         cv2.imshow("CHUCKVision", image)
 
         # Left key = Go to previous image. Right key = Go to next image. Escape key = Quit.
-        key = cv2.waitKey(0)
+        key = cv2.waitKeyEx(0)
         if key == 63234 or key == 2424832:
             index = max(0, index - 1)
         elif key == 27:
